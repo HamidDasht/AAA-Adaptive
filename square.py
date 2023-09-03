@@ -138,13 +138,8 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         global T
         global D
         PERIOD = period
-        #if T % PERIOD == 0:
-            #D *= -1
-        if T == PERIOD or T == PERIOD - 1: 
-          D = 1
-        else: 
-          D = -1
-            
+        if T % PERIOD == 0:
+          D *= -1
 
         print('------------------------------------------------------------')
         #print(idx_to_fool, idx_to_fool.shape)
@@ -158,7 +153,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         idx_improved_down = (ce < ce_min_curr) if loss_type == 'ce' else (margin < margin_min_curr) # down
         idx_improved_up = (margin > margin_min_curr) + (margin < margin_min_curr - 3) # up
         idx_improved_bi = np.where(ad_curr, margin < margin_min_curr, (margin > margin_min_curr) + (margin <  margin_min_curr -3))
-        idx_improved_exp = (idx_improved_up) if D == 1 else (idx_improved_down)
+        idx_improved_exp = (idx_improved_up) if torch.rand(1).item() < 0.15 else (idx_improved_down)
         idx_improved_trans = (np.floor(margin) > np.floor(margin_min_curr))# + (np.floor(margin + 0.1) < np.floor(margin_min_curr + 0.1))
         idx_improved_genius = idx_improved_trans + idx_improved_down #if T == PERIOD else idx_improved_exp
         #+ (np.floor(margin + 0.2) < np.floor(margin_min_curr + 0.2))
