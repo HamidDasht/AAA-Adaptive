@@ -15,7 +15,7 @@ from utils import *
 T = 1
 D = 1
 
-def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters, p_init, num_s, batch_size, targeted, loss_type, resume_path, plot, period):
+def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters, p_init, num_s, batch_size, targeted, loss_type, resume_path, plot, period, init_tmpt):
     # 1st query: with clean samples
     #corr = y_pred.argmax(1) == y.argmax(1) if not targeted else y_undefended.argmax(1) == y.argmax(1)
     min_val, max_val = 0, 1
@@ -148,12 +148,21 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         print(f'D:{D} T:{T} PERIOD:{PERIOD} Loss Type:{loss_type}')
 
         T = (T % PERIOD) + 1
-      
+        
+        if loss_type == 'tmpt':
+            if i_iter == 0:
+                tmpt = init_tmpt
+            else:
+                tmpt = init_tmpt / (i_iter)
+            criterion = np.exp(-(margin - margin_min_curr) / tmpt)
+            idx_improved_tmpt = (margin < margin_min_curr) + margin[criterion > torch.rand(1).item()]
+
         #idx_improved = (ce < ce_min_curr) if loss_type == 'ce' else (margin < margin_min_curr)
         idx_improved_down = (ce < ce_min_curr) if loss_type == 'ce' else (margin < margin_min_curr) # down
         idx_improved_up = (margin > margin_min_curr) + (margin < margin_min_curr - 3) # up
         idx_improved_bi = np.where(ad_curr, margin < margin_min_curr, (margin > margin_min_curr) + (margin <  margin_min_curr -3))
         idx_improved_exp = (idx_improved_up) if D == 1 else (idx_improved_down)
+    
         idx_improved_trans = (np.floor(margin) < margin_min_curr) # + (np.floor(margin + 0.1) < np.floor(margin_min_curr + 0.1))
         
         idx_improved_genius = idx_improved_trans + idx_improved_down #if T == PERIOD else idx_improved_exp
@@ -175,6 +184,9 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         elif loss_type == "gen":
           idx_improved = idx_improved_genius 
           print('gen')
+        elif loss_type == "tmpt":
+            idx_improved = idx_improved_tmpt
+            print("Simulated Annealing")
         else: idx_improved = idx_improved_down 
 
         print('------------------------------------------------------------')
@@ -376,5 +388,6 @@ if __name__ == '__main__':
         loss_type=args.loss,
         resume_path=args.resume_path,
         plot=args.plot,
-        period=args.period
+        period=args.period,
+        init_tmpt=args.tmpt
         )
