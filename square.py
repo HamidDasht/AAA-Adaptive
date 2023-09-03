@@ -155,7 +155,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
             else:
                 tmpt = init_tmpt / (i_iter)
             criterion = np.exp(-(margin - margin_min_curr) / tmpt)
-            idx_improved_tmpt = (margin < margin_min_curr) + margin[criterion > torch.rand(1).item()]
+            idx_improved_tmpt = (margin < margin_min_curr) + criterion > torch.rand(1).item()
 
         #idx_improved = (ce < ce_min_curr) if loss_type == 'ce' else (margin < margin_min_curr)
         idx_improved_down = (ce < ce_min_curr) if loss_type == 'ce' else (margin < margin_min_curr) # down
