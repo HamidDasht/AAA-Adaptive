@@ -138,8 +138,13 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         global T
         global D
         PERIOD = period
-        if T % PERIOD == 0:
-          D *= -1
+        #if T % PERIOD == 0:
+            #D *= -1
+        if T == PERIOD or T == PERIOD - 1: 
+          D = 1
+        else: 
+          D = -1
+            
 
         print('------------------------------------------------------------')
         #print(idx_to_fool, idx_to_fool.shape)
