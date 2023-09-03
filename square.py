@@ -306,6 +306,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=128) # 128
     parser.add_argument('--resume_path', type=str, default=None, help='Path to restore attack')
     parser.add_argument('--period', type=int, default=5, help="The period in which attack direction flips")
+    parser.add_argument('--tmpt', type=float, default=10, help="Initial temperature for Simulated Annealing")
     args = parser.parse_args()
 
     args.p = 0.3 if args.model != 'Standard' else 0.05
