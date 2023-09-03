@@ -122,7 +122,6 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
     
     # begin to attack iteratively
     attacker_directions = np.ones(x.shape[0], dtype=bool)
-    print('ad shape:', attacker_directions.shape)
     while n_queries.max() < stop_iters and acc != 0:
         # only handle unsuccessful adverarial examples
         idx_to_fool = margin_min > 0 
@@ -206,7 +205,8 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         median_nq, median_nq_ae = np.median(n_queries), np.median(n_queries[margin_min <= 0])
         log.print('{}: acc={:.2%}, acc_corr={:.1%}, ece={:.2f}, avg#q={:.2f}, avg#q_all={:.2f}, med#q={:.0f}, med#q_all={:.0f}, avg_margin={:.2f}, buff={:.0f}, eps={:.1f}, {:.2f}s'.
             format(i_iter + 2, acc, acc_corr, ece_score(y_pred_all, y_test_all) * 100, mean_nq_ae, mean_nq, median_nq_ae, median_nq, np.mean(margin_min), x.shape[0], eps*(1 if l2 else 255), time.time() - time_start))
-        
+        if x.shape[0] == 1:
+            print('curr min marg:', margin_min_curr)
         # save for resume
         metrics[i_iter] = [acc, acc_corr, mean_nq, mean_nq_ae, median_nq, margin_min.mean(), time.time() - time_start]
         np.save(process_path + '/metrics.npy', metrics)
