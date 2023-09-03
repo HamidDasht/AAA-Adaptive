@@ -155,7 +155,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         idx_improved_bi = np.where(ad_curr, margin < margin_min_curr, (margin > margin_min_curr) + (margin <  margin_min_curr -3))
         idx_improved_exp = (idx_improved_up) if D == 1 else (idx_improved_down)
         idx_improved_trans = (np.floor(margin) < margin_min_curr) # + (np.floor(margin + 0.1) < np.floor(margin_min_curr + 0.1))
-        print('floor:', np.floor(margin))
+        
         idx_improved_genius = idx_improved_trans + idx_improved_down #if T == PERIOD else idx_improved_exp
         #+ (np.floor(margin + 0.2) < np.floor(margin_min_curr + 0.2))
         # + (np.floor(margin) < np.floor(margin_min_curr -3))
@@ -170,7 +170,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
           idx_improved = idx_improved_exp
           print("Periodic")
         elif loss_type == 'trans':
-          idx_improved = idx_improved_trans + idx_improved_exp
+          idx_improved = idx_improved_trans + idx_improved_down
           print("transformation")
         elif loss_type == "gen":
           idx_improved = idx_improved_genius 
@@ -207,6 +207,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         log.print('{}: acc={:.2%}, acc_corr={:.1%}, ece={:.2f}, avg#q={:.2f}, avg#q_all={:.2f}, med#q={:.0f}, med#q_all={:.0f}, avg_margin={:.2f}, buff={:.0f}, eps={:.1f}, {:.2f}s'.
             format(i_iter + 2, acc, acc_corr, ece_score(y_pred_all, y_test_all) * 100, mean_nq_ae, mean_nq, median_nq_ae, median_nq, np.mean(margin_min), x.shape[0], eps*(1 if l2 else 255), time.time() - time_start))
         if x.shape[0] == 1:
+            print('floor:', np.floor(margin))
             print('margin curr:', margin)
             print('curr min marg:', margin_min_curr)
         # save for resume
