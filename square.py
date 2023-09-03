@@ -170,7 +170,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
           idx_improved = idx_improved_exp
           print("Periodic")
         elif loss_type == 'trans':
-          idx_improved = idx_improved_trans + idx_improved_down
+          idx_improved = idx_improved_trans + idx_improved_bi
           print("transformation")
         elif loss_type == "gen":
           idx_improved = idx_improved_genius 
