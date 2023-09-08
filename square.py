@@ -15,7 +15,7 @@ from utils import *
 T = 1
 D = 1
 
-def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters, p_init, num_s, batch_size, targeted, loss_type, resume_path, plot, period, init_tmpt):
+def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters, p_init, num_s, batch_size, targeted, loss_type, resume_path, plot, period, init_tmpt, avg_num, var):
     # 1st query: with clean samples
     #corr = y_pred.argmax(1) == y.argmax(1) if not targeted else y_undefended.argmax(1) == y.argmax(1)
     min_val, max_val = 0, 1
@@ -131,8 +131,23 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
             min_val=min_val, max_val=max_val, p=p_selection(p_init, i_iter, n_iters), targeted=targeted)
 
         # query
-        logits = model(x_new) 
+        logits = model(x_new)
+
+        if loss_type == 'avg':
+            avg_logits = logits[None, :].clone()
+            for i in range(avg_num):
+                new_logits = model(torch.clip(x_new + var*torch.randn(x_new.shape), 0, 1))[None, :]
+                avg_logits = torch.cat((avg_logits, new_logits))
+        
         margin = model.loss(y_curr, logits, targeted, loss_type='margin_loss')
+        
+        if loss_type == 'avg':
+            avg_margin = margin[None, :].clone()
+            for i in range(avg_num):
+                new_margin = model.loss(y_curr, avg_logits[i+1], targeted, loss_type='margin_loss')
+                avg_margin = torch.cat((avg_margin, new_margin))
+            margin = torch.mean(avg_margin, dim=0).squeeze()
+        
         ce = model.loss(y_curr, logits, targeted, loss_type='cross_entropy')
         
         global T
@@ -168,6 +183,7 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         
         if loss_type == 'up': idx_improved = idx_improved_up
         elif loss_type == 'bi': idx_improved = idx_improved_bi
+        elif loss_type == 'avg': idx_improved = idx_improved_down 
         else: idx_improved = idx_improved_down 
 
         ce_min[idx_to_fool] = idx_improved * ce + ~idx_improved * ce_min_curr
@@ -285,8 +301,11 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=128) # 128
     parser.add_argument('--resume_path', type=str, default=None, help='Path to restore attack')
+
     parser.add_argument('--period', type=int, default=5, help="The period in which attack direction flips")
     parser.add_argument('--tmpt', type=float, default=10, help="Initial temperature for Simulated Annealing")
+    parser.add_argument('--avg_num', type=int, default=10, help="Number of samples to take average among")
+    parser.add_argument('--var', type=float, default=0.01, help="Variance for the guassian dist. used to generate samples for averaging")
     args = parser.parse_args()
 
     args.p = 0.3 if args.model != 'Standard' else 0.05
@@ -370,5 +389,7 @@ if __name__ == '__main__':
         resume_path=args.resume_path,
         plot=args.plot,
         period=args.period,
-        init_tmpt=args.tmpt
+        init_tmpt=args.tmpt,
+        avg_num=args.avg_num - 1,
+        var=args.var
         )
