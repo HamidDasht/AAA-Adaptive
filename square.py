@@ -141,11 +141,11 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         if T % PERIOD == 0:
           D *= -1
 
-        print('------------------------------------------------------------')
+        #print('------------------------------------------------------------')
         #print(idx_to_fool, idx_to_fool.shape)
         #print(ad_curr, ad_curr.shape)
         #print('sum of ad_curr:', ad_curr.sum())
-        print(f'D:{D} T:{T} PERIOD:{PERIOD} Loss Type:{loss_type}')
+        #print(f'D:{D} T:{T} PERIOD:{PERIOD} Loss Type:{loss_type}')
 
         T = (T % PERIOD) + 1
         
@@ -161,35 +161,15 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         idx_improved_down = (ce < ce_min_curr) if loss_type == 'ce' else (margin < margin_min_curr) # down
         idx_improved_up = (margin > margin_min_curr) + (margin < margin_min_curr - 3) # up
         idx_improved_bi = np.where(ad_curr, margin < margin_min_curr, (margin > margin_min_curr) + (margin <  margin_min_curr -3))
-        idx_improved_exp = ((margin <= margin_min_curr) + (margin > margin_min_curr)) if torch.rand(1).item() < 0.5 else (idx_improved_down)
-    
-        idx_improved_trans = (np.floor(margin) < margin_min_curr) # + (np.floor(margin + 0.1) < np.floor(margin_min_curr + 0.1))
         
-        idx_improved_genius = idx_improved_trans + idx_improved_down #if T == PERIOD else idx_improved_exp
-        #+ (np.floor(margin + 0.2) < np.floor(margin_min_curr + 0.2))
-        # + (np.floor(margin) < np.floor(margin_min_curr -3))
-        #(np.cbrt(0.1*margin) < np.cbrt(0.1*margin_min_curr))
         ad_tmp = attacker_directions[idx_to_fool]
         ad_tmp[(margin - margin_min_curr) > 3] = 0
         attacker_directions[idx_to_fool] = ad_tmp
         
         if loss_type == 'up': idx_improved = idx_improved_up
         elif loss_type == 'bi': idx_improved = idx_improved_bi
-        elif loss_type == 'exp': 
-          idx_improved = idx_improved_exp
-          print("Periodic")
-        elif loss_type == 'trans':
-          idx_improved = idx_improved_trans + idx_improved_bi
-          print("transformation")
-        elif loss_type == "gen":
-          idx_improved = idx_improved_genius 
-          print('gen')
-        elif loss_type == "tmpt":
-            idx_improved = idx_improved_tmpt
-            print("Simulated Annealing")
         else: idx_improved = idx_improved_down 
 
-        print('------------------------------------------------------------')
         ce_min[idx_to_fool] = idx_improved * ce + ~idx_improved * ce_min_curr
         margin_min[idx_to_fool] = idx_improved * margin + ~idx_improved * margin_min_curr
         y_pred[idx_to_fool] = idx_improved[:, np.newaxis] * logits + ~idx_improved[:, np.newaxis] * y_pred[idx_to_fool]
