@@ -134,19 +134,19 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         logits = model(x_new)
 
         if loss_type == 'avg':
-            avg_logits = logits[None, :].clone()
+            avg_logits = torch.from_numpy(logits[None, :]).cuda().clone()
             for i in range(avg_num):
-                new_logits = model(torch.clip(x_new + var*torch.randn(x_new.shape), 0, 1))[None, :]
+                new_logits = model(torch.clip(torch.from_numpy(x_new).cuda() + var*torch.randn(torch.from_numpy(x_new).shape).cuda(), 0, 1).float())[None, :].cuda()
                 avg_logits = torch.cat((avg_logits, new_logits))
         
         margin = model.loss(y_curr, logits, targeted, loss_type='margin_loss')
-        
+        original_margin = margin.copy()
         if loss_type == 'avg':
-            avg_margin = margin[None, :].clone()
+            avg_margin = torch.from_numpy(margin[None, :]).cuda().clone()
             for i in range(avg_num):
-                new_margin = model.loss(y_curr, avg_logits[i+1], targeted, loss_type='margin_loss')
+                new_margin = torch.from_numpy(model.loss(y_curr, avg_logits[i+1].cpu().numpy(), targeted, loss_type='margin_loss'))[None, :].cuda()
                 avg_margin = torch.cat((avg_margin, new_margin))
-            margin = torch.mean(avg_margin, dim=0).squeeze()
+            margin = torch.mean(avg_margin, dim=0).squeeze().cpu().numpy()
         
         ce = model.loss(y_curr, logits, targeted, loss_type='cross_entropy')
         
@@ -186,6 +186,8 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         elif loss_type == 'avg': idx_improved = idx_improved_down 
         else: idx_improved = idx_improved_down 
 
+        margin = original_margin
+
         ce_min[idx_to_fool] = idx_improved * ce + ~idx_improved * ce_min_curr
         margin_min[idx_to_fool] = idx_improved * margin + ~idx_improved * margin_min_curr
         y_pred[idx_to_fool] = idx_improved[:, np.newaxis] * logits + ~idx_improved[:, np.newaxis] * y_pred[idx_to_fool]
@@ -199,6 +201,8 @@ def attack(model, x, y, corr, y_pred, y_undefended, l2, eps, n_iters, stop_iters
         idx_improved = np.reshape(idx_improved, [-1, *[1] * len(x.shape[:-1])])
         x_best[idx_to_fool] = idx_improved * x_new + ~idx_improved * x_best_curr
         n_queries[idx_to_fool] += 1
+        if loss_type == 'avg':
+          n_queries[idx_to_fool] += avg_num - 1
         i_iter += 1
         
         attacker_authority, attacker_selected = querynet.backward(idx_improved, x_new_index, 
