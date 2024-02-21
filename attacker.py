@@ -150,7 +150,7 @@ class QueryNet():
         return np.clip(x_curr + deltas, min_val, max_val), deltas
     
     def square_attacker(self, x_curr, x_best_curr, **kwargs): 
-        x_next, _ = self.square_attack(x_curr, x_best_curr, x_best_curr-x_curr, np.zeros(x_best_curr.shape[0], dtype=np.bool), **kwargs)
+        x_next, _ = self.square_attack(x_curr, x_best_curr, x_best_curr-x_curr, np.zeros(x_best_curr.shape[0], dtype=np.bool_), **kwargs)
         return x_next
 
     def square_attacker_s(self, x_curr, x_best_curr, y_curr, get_surrogate_loss, **kwargs):
@@ -174,7 +174,7 @@ class QueryNet():
         return x_next
 
     def horizontal_attacker(self, x_curr, x_best_curr, **kwargs):
-        is_potential_maximizer = np.zeros(x_best_curr.shape[0], dtype=np.bool)
+        is_potential_maximizer = np.zeros(x_best_curr.shape[0], dtype=np.bool_)
         deltas = x_best_curr-x_curr
         for i in range(self.horizontal_max_trial):
             x_next, deltas = self.square_attack(x_curr, x_best_curr, deltas, is_potential_maximizer, **kwargs)

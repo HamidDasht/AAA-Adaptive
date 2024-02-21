@@ -95,7 +95,7 @@ class DataManager():
         self.result_dir = result_dir
         if self.result_dir is not None: os.makedirs(self.result_dir, exist_ok=True)
         self.iter = np.ones(self.num_sample, dtype=np.int32)
-        self.suc = np.zeros(self.num_sample, dtype=np.bool)
+        self.suc = np.zeros(self.num_sample, dtype=np.bool_)
         self.lipschitz = np.zeros(self.num_sample, dtype=np.float32)
         self.max_negative_loss = - self.loss
 
@@ -134,7 +134,7 @@ class DataManager():
     def update_lipschitz(self):
         def calculate_lipschitz(index1, index2): return np.abs(self.loss[index1]-self.loss[index2]) / self.norm2(self.data[index1], self.data[index2])
 
-        unsuccess_indexes = (1-self.suc).astype(np.bool)
+        unsuccess_indexes = (1-self.suc).astype(np.bool_)
         old_sample_indexes = self.clean_sample_indexes[:-1][unsuccess_indexes]
         new_sample_indexes = self.clean_sample_indexes[1:] [unsuccess_indexes]-1
         while 1:
@@ -146,14 +146,14 @@ class DataManager():
     def judge_potential_maximizer(self, tentative_query):
         assert tentative_query.shape[0] == np.sum(1-self.suc), '%d/%d' % (tentative_query.shape[0], np.sum(1-self.suc))
 
-        unsuccess_indexes = (1-self.suc).astype(np.bool)
+        unsuccess_indexes = (1-self.suc).astype(np.bool_)
         old_sample_indexes = self.clean_sample_indexes[:-1][unsuccess_indexes]
         new_sample_indexes = self.clean_sample_indexes[1:] [unsuccess_indexes]-1
         self.max_negative_loss[unsuccess_indexes] = np.where(
             -self.loss[new_sample_indexes] > self.max_negative_loss[unsuccess_indexes], 
             -self.loss[new_sample_indexes],  self.max_negative_loss[unsuccess_indexes])
         
-        is_potential_maximizer = np.ones(np.sum(1-self.suc), dtype=np.bool)
+        is_potential_maximizer = np.ones(np.sum(1-self.suc), dtype=np.bool_)
         while 1:
             left = -self.loss[old_sample_indexes] + self.lipschitz[unsuccess_indexes] * self.norm2(tentative_query, self.data[old_sample_indexes])
             is_potential_maximizer = np.where(left < self.max_negative_loss[unsuccess_indexes] * 0.7, False, is_potential_maximizer)
